@@ -1,10 +1,9 @@
-dotenv
-typing
-chromadb
-langchain_chroma
+langgraph
 langchain
-langchain_community
+langchain-community
 langchain-openai
 langchain-groq
-python-dotenv
 langchain-google-genai
+python-dotenv
+chromadb
+jsonpatch
