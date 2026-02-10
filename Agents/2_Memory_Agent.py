@@ -1,3 +1,5 @@
+#this agent will also store the data of current chat in txt file
+
 from typing import TypedDict, List, Union
 from langchain_core.messages import HumanMessage, AIMessage
 from langchain_groq import ChatGroq
@@ -22,6 +24,8 @@ def process(state: AgentState) -> AgentState:
     response = llm.invoke(state["messages"])
     state["messages"].append(AIMessage(content=response.content))
     print(f"\nAI: {response.content}")
+    
+    # print("CURRENT STATE: ", state["messages"])  #just testing
     return state
 
 
@@ -42,5 +46,16 @@ while user_input != "exit":
 
     # print(result["messages"])
     conversation_history = result["messages"]
-    
     user_input = input("Enter: ")
+
+
+with open("logging.txt", "w", encoding="utf-8") as file:
+    file.write("Your conversation log:\n")
+    
+    for message in conversation_history:
+        if isinstance(message, HumanMessage):
+            file.write(f"You: {message.content}\n")
+        elif isinstance(message, AIMessage):
+            file.write(f"AI: {message.content}\n\n")
+    file.write("End of conversation")
+print("Conversation saved to logging.txt")
