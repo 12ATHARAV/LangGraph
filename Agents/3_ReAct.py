@@ -36,3 +36,23 @@ load_dotenv()
 # state = {"messages": ["Hi!"]}
 # update = {"messages": ["Nice to meet you!"]}
 # new_state = {"messages": ["Hi!", "Nice to meet you!"]}
+
+
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+
+@tool
+def add(a: int, b: int):
+    """This is an addition function that adds 2 numer together"""
+    return a+b
+    
+tools = [add]
+
+model = ChatGroq(model = "qwen/qwen3-32b").bind_tools(tools)
+    
+def model_call(state:AgentState) -> AgentState:
+    system_prompt = SystemMessage(content=
+        "you are my AI assistant, please answer my query to best of your ability"                              
+    )
+    response = model.invoke([system_prompt])
+    return {"messages": [response]}
