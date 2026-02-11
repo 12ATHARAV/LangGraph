@@ -56,3 +56,12 @@ def model_call(state:AgentState) -> AgentState:
     )
     response = model.invoke([system_prompt])
     return {"messages": [response]}
+
+
+def should_continue(state: AgentState):
+    messages = state["messages"]
+    last_message = messages[-1]
+    if not last_message.tool_calls:
+        return "end"
+    else:
+        return "continue"
