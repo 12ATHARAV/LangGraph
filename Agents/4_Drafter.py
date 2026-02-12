@@ -84,3 +84,31 @@ def our_agent(state: AgentState) -> AgentState:
         print(f"🔧 USING TOOLS: {[tc['name'] for tc in response.tool_calls]}")
 
     return {"messages": list(state["messages"]) + [user_message, response]}
+
+
+def should_continue(state: AgentState) -> str:
+    """Determine if we should continue or end the conversation."""
+
+    messages = state["messages"]
+    
+    if not messages:
+        return "continue"
+    
+    # This looks for the most recent tool message....
+    for message in reversed(messages):
+        # ... and checks if this is a ToolMessage resulting from save
+        if (isinstance(message, ToolMessage) and 
+            "saved" in message.content.lower() and
+            "document" in message.content.lower()):
+            return "end" # goes to the end edge which leads to the endpoint
+        
+    return "continue"
+
+def print_messages(messages):
+    """Function I made to print the messages in a more readable format"""
+    if not messages:
+        return
+    
+    for message in messages[-3:]:
+        if isinstance(message, ToolMessage):
+            print(f"\n🛠️ TOOL RESULT: {message.content}")
