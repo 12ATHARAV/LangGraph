@@ -7,3 +7,6 @@ langchain-google-genai
 python-dotenv
 chromadb
 jsonpatch
+langchain_huggingface
+langchain_chroma
+langchain-text-splitters
