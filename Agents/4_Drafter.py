@@ -112,3 +112,40 @@ def print_messages(messages):
     for message in messages[-3:]:
         if isinstance(message, ToolMessage):
             print(f"\n🛠️ TOOL RESULT: {message.content}")
+
+
+graph = StateGraph(AgentState)
+
+graph.add_node("agent", our_agent)
+graph.add_node("tools", ToolNode(tools))
+
+graph.set_entry_point("agent")
+
+graph.add_edge("agent", "tools")
+
+
+graph.add_conditional_edges(
+    "tools",
+    should_continue,
+    {
+        "continue": "agent",
+        "end": END,
+    },
+)
+
+app = graph.compile()
+
+
+def run_document_agent():
+    print("\n ===== DRAFTER =====")
+    
+    state = {"messages": []}
+    
+    for step in app.stream(state, stream_mode="values"):
+        if "messages" in step:
+            print_messages(step["messages"])
+    
+    print("\n ===== DRAFTER FINISHED =====")
+
+if __name__ == "__main__":
+    run_document_agent()
