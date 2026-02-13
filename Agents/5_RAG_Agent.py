@@ -18,7 +18,7 @@ os.environ["HF_HOME"] = os.path.join(os.getcwd(), ".hf_cache")
 
 load_dotenv()
 
-model = ChatGroq(model = "qwen/qwen3-32b", temperature = 0) # I want to minimize hallucination - temperature = 0 makes the model output more deterministic 
+llm = ChatGroq(model = "qwen/qwen3-32b", temperature = 0) # I want to minimize hallucination - temperature = 0 makes the model output more deterministic 
 
 
 embeddings = HuggingFaceEmbeddings(
@@ -95,3 +95,60 @@ def retriever_tool(query: str) -> str:
         results.append(f"Document {i+1}:\n{doc.page_content}")
     
     return "\n\n".join(results)
+
+
+tools = [retriever_tool]
+
+llm = llm.bind_tools(tools)
+
+class AgentState(TypedDict):
+    messages: Annotated[Sequence[BaseMessage], add_messages]
+
+
+def should_continue(state: AgentState):
+    """Check if the last message contains tool calls."""
+    result = state['messages'][-1]
+    return hasattr(result, 'tool_calls') and len(result.tool_calls) > 0
+
+
+system_prompt = """
+You are an intelligent AI assistant who answers questions about Stock Market Performance in 2024 based on the PDF document loaded into your knowledge base.
+Use the retriever tool available to answer questions about the stock market performance data. You can make multiple calls if needed.
+If you need to look up some information before asking a follow up question, you are allowed to do that!
+Please always cite the specific parts of the documents you use in your answers.
+"""
+
+
+tools_dict = {our_tool.name: our_tool for our_tool in tools} # Creating a dictionary of our tools
+
+# LLM Agent
+def call_llm(state: AgentState) -> AgentState:
+    """Function to call the LLM with the current state."""
+    messages = list(state['messages'])
+    messages = [SystemMessage(content=system_prompt)] + messages
+    message = llm.invoke(messages)
+    return {'messages': [message]}
+
+# Retriever Agent
+def take_action(state: AgentState) -> AgentState:
+    """Execute tool calls from the LLM's response."""
+
+    tool_calls = state['messages'][-1].tool_calls
+    results = []
+    for t in tool_calls:
+        print(f"Calling Tool: {t['name']} with query: {t['args'].get('query', 'No query provided')}")
+        
+        if not t['name'] in tools_dict: # Checks if a valid tool is present
+            print(f"\nTool: {t['name']} does not exist.")
+            result = "Incorrect Tool Name, Please Retry and Select tool from List of Available tools."
+        
+        else:
+            result = tools_dict[t['name']].invoke(t['args'].get('query', ''))
+            print(f"Result length: {len(str(result))}")
+            
+
+        # Appends the Tool Message
+        results.append(ToolMessage(tool_call_id=t['id'], name=t['name'], content=str(result)))
+
+    print("Tools Execution Complete. Back to the model!")
+    return {'messages': results}
