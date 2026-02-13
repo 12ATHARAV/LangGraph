@@ -12,6 +12,10 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_chroma import Chroma
 from langchain_core.tools import tool
 
+import os
+os.environ["HF_HOME"] = os.path.join(os.getcwd(), ".hf_cache")
+
+
 load_dotenv()
 
 model = ChatGroq(model = "qwen/qwen3-32b", temperature = 0) # I want to minimize hallucination - temperature = 0 makes the model output more deterministic 
@@ -39,7 +43,7 @@ except Exception as e:
     raise
 
 # Chunking Process
-text_splitter = RecursiveCharacterTextSplitter(
-    chunk_size=1000,
-    chunk_overlap=200
-)
+# text_splitter = RecursiveCharacterTextSplitter(
+#     chunk_size=1000,
+#     chunk_overlap=200
+# )

@@ -10,3 +10,5 @@ jsonpatch
 langchain_huggingface
 langchain_chroma
 langchain-text-splitters
+sentence-transformers
+pypdf
