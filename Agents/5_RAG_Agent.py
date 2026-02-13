@@ -152,3 +152,37 @@ def take_action(state: AgentState) -> AgentState:
 
     print("Tools Execution Complete. Back to the model!")
     return {'messages': results}
+
+
+graph = StateGraph(AgentState)
+graph.add_node("llm", call_llm)
+graph.add_node("retriever_agent", take_action)
+
+graph.add_conditional_edges(
+    "llm",
+    should_continue,
+    {True: "retriever_agent", False: END}
+)
+graph.add_edge("retriever_agent", "llm")
+graph.set_entry_point("llm")
+
+rag_agent = graph.compile()
+
+
+def running_agent():
+    print("\n=== RAG AGENT===")
+    
+    while True:
+        user_input = input("\nWhat is your question: ")
+        if user_input.lower() in ['exit', 'quit']:
+            break
+            
+        messages = [HumanMessage(content=user_input)] # converts back to a HumanMessage type
+
+        result = rag_agent.invoke({"messages": messages})
+        
+        print("\n=== ANSWER ===")
+        print(result['messages'][-1].content)
+
+
+running_agent()
