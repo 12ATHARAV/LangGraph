@@ -43,7 +43,55 @@ except Exception as e:
     raise
 
 # Chunking Process
-# text_splitter = RecursiveCharacterTextSplitter(
-#     chunk_size=1000,
-#     chunk_overlap=200
-# )
+text_splitter = RecursiveCharacterTextSplitter(
+    chunk_size=1000,
+    chunk_overlap=200  #bcz by using only half sentence beaning of sentence may be lost
+)
+
+pages_split = text_splitter.split_documents(pages) #we now apply this to our pages
+
+persist_directory = r"C:\Users\athar\Downloads\LangGraph_freecodecamp\Agents"   #place for chroma vector db
+collection_name = "stock_market"
+
+# If our collection does not exist in the directory, we create using the os command
+if not os.path.exists(persist_directory):
+    os.makedirs(persist_directory)
+
+
+try:
+    # Here, we actually create the chroma database using our embeddigns model
+    vectorstore = Chroma.from_documents(
+        documents=pages_split,
+        embedding=embeddings,
+        persist_directory=persist_directory,
+        collection_name=collection_name
+    )
+    print(f"Created ChromaDB vector store!")
+    
+except Exception as e:
+    print(f"Error setting up ChromaDB: {str(e)}")
+    raise
+
+
+# Now we create our retriever 
+retriever = vectorstore.as_retriever(
+    search_type="similarity",
+    search_kwargs={"k": 5} # K is the amount of chunks to return
+)
+
+@tool
+def retriever_tool(query: str) -> str:
+    """
+    This tool searches and returns the information from the Stock Market Performance 2024 document.
+    """
+
+    docs = retriever.invoke(query)
+
+    if not docs:
+        return "I found no relevant information in the Stock Market Performance 2024 document."
+    
+    results = []
+    for i, doc in enumerate(docs):
+        results.append(f"Document {i+1}:\n{doc.page_content}")
+    
+    return "\n\n".join(results)
